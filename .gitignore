@@ -201,6 +201,10 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
+# SpecKit
+.claude/
+.specify/
+
 # Marimo
 marimo/_static/
 marimo/_lsp/
