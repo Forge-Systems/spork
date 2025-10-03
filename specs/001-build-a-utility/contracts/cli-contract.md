@@ -21,7 +21,7 @@ frg <feature-request>
 - Must be provided (not empty)
 - Must be between 1-500 characters
 - Can contain spaces, special characters (will be sanitized for branch name)
-- Multiple words should be quoted: `frg "add user authentication"`
+- Multiple words should be quoted: `spork "add user authentication"`
 
 ### Options/Flags
 

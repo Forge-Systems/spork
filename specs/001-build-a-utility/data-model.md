@@ -258,49 +258,80 @@ Claude Code launched with WorktreeConfig.directory_path
 ## Type Definitions (Python)
 
 ```python
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
+from pydantic import BaseModel, Field, field_validator, model_validator
 
-@dataclass(frozen=True)
-class FeatureRequest:
-    text: str
-    sanitized_name: str
-    max_length: int = 50
+class FeatureRequest(BaseModel):
+    model_config = {"frozen": True}
 
-@dataclass(frozen=True)
-class ValidationResult:
+    text: str = Field(..., min_length=1, max_length=500)
+    sanitized_name: str = Field(..., min_length=1, max_length=50)
+    max_length: int = Field(default=50, ge=1, le=100)
+
+    @field_validator('sanitized_name')
+    @classmethod
+    def validate_sanitized_name(cls, v: str) -> str:
+        # Ensure only lowercase, hyphens, alphanumeric
+        if not all(c.isalnum() or c == '-' for c in v):
+            raise ValueError("Sanitized name must contain only alphanumeric and hyphens")
+        return v
+
+class ValidationResult(BaseModel):
+    model_config = {"frozen": True}
+
     check_name: str
     passed: bool
     error_message: Optional[str] = None
     suggestion: Optional[str] = None
 
-@dataclass(frozen=True)
-class GitRepository:
+    @model_validator(mode='after')
+    def validate_error_message(self):
+        if not self.passed and not self.error_message:
+            raise ValueError("error_message required when passed=False")
+        return self
+
+class GitRepository(BaseModel):
+    model_config = {"frozen": True}
+
     root_path: Path
     current_branch: str
     has_remote: bool
     main_branch: str
 
-@dataclass(frozen=True)
-class FeatureNumber:
-    number: int
-    formatted: str
+    @field_validator('main_branch')
+    @classmethod
+    def validate_main_branch(cls, v: str) -> str:
+        if v not in ('main', 'master'):
+            raise ValueError("main_branch must be 'main' or 'master'")
+        return v
 
-@dataclass(frozen=True)
-class WorktreeConfig:
+class FeatureNumber(BaseModel):
+    model_config = {"frozen": True}
+
+    number: int = Field(..., ge=1, le=999)
+    formatted: str = Field(..., pattern=r'^\d{3}$')
+
+    @model_validator(mode='after')
+    def validate_formatted_matches_number(self):
+        if self.formatted != f"{self.number:03d}":
+            raise ValueError(f"formatted '{self.formatted}' must match number {self.number:03d}")
+        return self
+
+class WorktreeConfig(BaseModel):
+    model_config = {"frozen": True}
+
     branch_name: str
     directory_path: Path
     base_branch: str
     feature_number: FeatureNumber
     feature_request: FeatureRequest
 
-@dataclass
-class CommandContext:
+class CommandContext(BaseModel):
     original_cwd: Path
     repository: Optional[GitRepository] = None
     worktree_config: Optional[WorktreeConfig] = None
-    validation_results: list[ValidationResult] = field(default_factory=list)
+    validation_results: list[ValidationResult] = Field(default_factory=list)
 ```
 
 ## Storage Considerations

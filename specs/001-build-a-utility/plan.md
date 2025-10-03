@@ -30,11 +30,11 @@
 - Phase 3-4: Implementation execution (manual or via tools)
 
 ## Summary
-Build a CLI utility (`frg`) that automates the feature specification workflow by integrating git worktrees, GitHub Spec Kit, and Claude Code. The tool validates prerequisites, creates isolated worktree environments, and launches Claude Code interactively to execute the `/specify` command with user-provided feature requests. Packaged as a Python CLI tool distributable via Homebrew and npm.
+Build a CLI utility (`spork`) that automates the feature specification workflow by integrating git worktrees, GitHub Spec Kit, and Claude Code. The tool validates prerequisites, creates isolated worktree environments, and launches Claude Code interactively to execute the `/specify` command with user-provided feature requests. Packaged as a Python CLI tool distributable via Homebrew and npm.
 
 ## Technical Context
 **Language/Version**: Python 3.9+ (for broad compatibility, packagable as standalone binary)
-**Primary Dependencies**: Click (CLI framework), subprocess (git/Claude Code invocation), pathlib (file system operations)
+**Primary Dependencies**: Click (CLI framework), Pydantic (data validation), subprocess (git/Claude Code invocation), pathlib (file system operations)
 **Storage**: File system (worktrees in `.worktrees/` subdirectory, branch tracking via git)
 **Testing**: pytest with pytest-subprocess for mocking external commands
 **Target Platform**: macOS/Linux (Unix-like systems with bash, git, and Claude Code installed)
@@ -72,9 +72,9 @@ specs/[###-feature]/
 
 ### Source Code (repository root)
 ```
-frg/                         # Python package
+spork/                         # Python package
 ├── __init__.py
-├── __main__.py              # Entry point for `python -m frg`
+├── __main__.py              # Entry point for `python -m spork`
 ├── cli.py                   # Click CLI definition
 ├── validators.py            # Validation functions (git, spec-kit, claude-code)
 ├── git_operations.py        # Git worktree and branch operations
@@ -123,6 +123,7 @@ package.json                 # npm wrapper configuration
 **Key Decisions**:
 - Language: Python 3.9+ for broad compatibility and packaging
 - CLI Framework: Click for elegant API and built-in testing
+- Data Validation: Pydantic for robust input validation and type safety
 - Git Operations: Direct subprocess calls (no GitPython dependency)
 - Distribution: Primary via PyPI, secondary via Homebrew/npm
 - Testing: pytest with subprocess mocking for fast, deterministic tests
@@ -134,12 +135,12 @@ package.json                 # npm wrapper configuration
 ✅ **COMPLETED** - See artifacts below
 
 **1. Data Model** → [data-model.md](data-model.md):
-   - FeatureRequest: User input and sanitized name
-   - ValidationResult: Check outcomes with error messages
-   - GitRepository: Repository metadata and main branch
-   - FeatureNumber: Numeric identifier with formatting
-   - WorktreeConfig: Complete worktree creation configuration
-   - CommandContext: Overall execution state and lifecycle
+   - FeatureRequest: User input and sanitized name (Pydantic model with validation)
+   - ValidationResult: Check outcomes with error messages (Pydantic model)
+   - GitRepository: Repository metadata and main branch (Pydantic model)
+   - FeatureNumber: Numeric identifier with formatting (Pydantic model with range validation)
+   - WorktreeConfig: Complete worktree creation configuration (Pydantic model)
+   - CommandContext: Overall execution state and lifecycle (Pydantic model)
 
 **2. Contracts** → [contracts/](contracts/):
    - [cli-contract.md](contracts/cli-contract.md): Complete CLI interface specification
@@ -166,7 +167,7 @@ package.json                 # npm wrapper configuration
    - Integration with Spec Kit workflow
 
 **5. Agent Context** → CLAUDE.md:
-   - Updated with Python 3.9+, Click framework
+   - Updated with Python 3.9+, Click framework, Pydantic
    - Added subprocess, pathlib dependencies
    - File system storage strategy documented
    - ✅ Generated via update-agent-context.sh
@@ -186,16 +187,16 @@ package.json                 # npm wrapper configuration
 **Task Breakdown by Module**:
 
 1. **Project Setup** (1-4):
-   - Create Python package structure (frg/)
+   - Create Python package structure (spork/)
    - Setup pyproject.toml with Click dependency [P]
    - Create test infrastructure (pytest, pytest-subprocess) [P]
    - Setup .gitignore
 
 2. **Data Models** (5-8):
-   - Define dataclasses in separate module (FeatureRequest, ValidationResult, etc.) [P]
-   - Write unit tests for dataclass validation [P]
-   - Implement dataclass methods (frozen, validation)
-   - Write tests for edge cases
+   - Define Pydantic models in separate module (FeatureRequest, ValidationResult, etc.) [P]
+   - Write unit tests for Pydantic model validation [P]
+   - Implement custom validators (frozen config, field validators)
+   - Write tests for edge cases and validation errors
 
 3. **Validators Module** (9-14):
    - Write contract tests for git_installed check [P]

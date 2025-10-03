@@ -67,14 +67,14 @@ When creating this spec from a user prompt:
 ## User Scenarios & Testing *(mandatory)*
 
 ### Primary User Story
-A developer working in a git repository wants to start a new feature specification workflow. They navigate to the repository directory in their terminal and run `frg <feature request>` where the feature request is a natural language description of what they want to build. The tool automatically creates an isolated workspace using git worktrees, launches Claude Code interactively in that workspace within the current shell, and initiates the specification process by running `/specify <feature>` with the provided feature request. The developer interacts directly with Claude Code in their current terminal session to complete the specification workflow.
+A developer working in a git repository wants to start a new feature specification workflow. They navigate to the repository directory in their terminal and run `spork <feature request>` where the feature request is a natural language description of what they want to build. The tool automatically creates an isolated workspace using git worktrees, launches Claude Code interactively in that workspace within the current shell, and initiates the specification process by running `/specify <feature>` with the provided feature request. The developer interacts directly with Claude Code in their current terminal session to complete the specification workflow.
 
 ### Acceptance Scenarios
-1. **Given** a developer is in a git repository with Spec Kit initialized, **When** they run `frg "add user authentication"`, **Then** the system validates all prerequisites (git, Spec Kit, Claude Code), creates a new git worktree, launches Claude Code in that worktree, and runs the `/specify` command with "add user authentication" as input
+1. **Given** a developer is in a git repository with Spec Kit initialized, **When** they run `spork "add user authentication"`, **Then** the system validates all prerequisites (git, Spec Kit, Claude Code), creates a new git worktree, launches Claude Code in that worktree, and runs the `/specify` command with "add user authentication" as input
 2. **Given** a developer runs `frg` without providing a feature request, **When** the command executes, **Then** the system displays an error message indicating a feature request is required
-3. **Given** a developer is not in a git repository, **When** they run `frg <feature>`, **Then** the system displays an error message indicating the command must be run from within a git repository
-4. **Given** a developer is in a git repository without Spec Kit installed, **When** they run `frg <feature>`, **Then** the system displays an error message indicating Spec Kit must be installed and initialized
-5. **Given** git or Claude Code is not installed, **When** a developer runs `frg <feature>`, **Then** the system displays an error message indicating which tool is missing
+3. **Given** a developer is not in a git repository, **When** they run `spork <feature>`, **Then** the system displays an error message indicating the command must be run from within a git repository
+4. **Given** a developer is in a git repository without Spec Kit installed, **When** they run `spork <feature>`, **Then** the system displays an error message indicating Spec Kit must be installed and initialized
+5. **Given** git or Claude Code is not installed, **When** a developer runs `spork <feature>`, **Then** the system displays an error message indicating which tool is missing
 6. **Given** a developer runs `frg` with a multi-word feature request, **When** the command executes, **Then** the entire feature request is passed correctly to the `/specify` command, preserving spacing and special characters
 
 ### Edge Cases
@@ -93,6 +93,7 @@ A developer working in a git repository wants to start a new feature specificati
 - **FR-003**: System MUST validate that the command is executed from within a git repository directory
 - **FR-004**: System MUST validate that GitHub Spec Kit is installed in the repository (check for `.specify/` directory)
 - **FR-005**: System MUST validate that Spec Kit is properly initialized (verify existence of `.specify/memory/constitution.md`, `.specify/templates/`, and `.specify/scripts/`)
+- **FR-005a**: System MUST validate that Spec Kit exists on the main/master branch (not just in current worktree) by checking `git show main:.specify/memory/constitution.md` succeeds
 - **FR-006**: System MUST validate Claude Code availability in PATH before proceeding with worktree creation
 - **FR-007**: System MUST run `git fetch` to update remote branch information before determining the next available feature number
 - **FR-008**: System MUST check for existing local and remote branches matching the pattern `<number>-*` to identify the next available feature number
@@ -100,7 +101,7 @@ A developer working in a git repository wants to start a new feature specificati
 - **FR-010**: System MUST use incremental numbering for worktree names (001-feature-name, 002-feature-name, etc.) derived from sanitized feature request text, selecting the next number not used by any existing local or remote branch
 - **FR-011**: System MUST create new worktree based on the main/master branch (detecting which exists in the repository)
 - **FR-012**: System MUST launch Claude Code interactively in the newly created worktree within the current shell (blocking operation)
-- **FR-013**: System MUST automatically execute the `/specify` command in Claude Code with the user-provided feature request as input
+- **FR-013**: System MUST launch Claude Code with an initial message containing the `/specify` command and the user-provided feature request
 - **FR-014**: System MUST transfer control to the Claude Code interactive session, allowing direct user interaction until session completes
 - **FR-015**: System MUST display an error message when run without a feature request argument
 - **FR-016**: System MUST handle feature requests containing spaces, quotes, and special characters correctly by sanitizing for worktree naming
