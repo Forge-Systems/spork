@@ -516,3 +516,158 @@ def test_command_context_with_all_fields():
     assert context.repository == repo
     assert context.worktree_config == config
     assert context.validation_results == results
+
+
+# Tests for EnvFileCopyResult model (Feature 002)
+
+
+def test_copy_result_success():
+    """Given successful copy operation
+    When creating EnvFileCopyResult model
+    Then model should be created with correct counts"""
+    from spork.data_models import EnvFileCopyResult
+
+    # Given / When
+    result = EnvFileCopyResult(
+        files_discovered=3,
+        files_copied=3,
+        files_failed=0
+    )
+
+    # Then
+    assert result.files_discovered == 3
+    assert result.files_copied == 3
+    assert result.files_failed == 0
+    assert result.errors == []
+    assert result.success is True
+
+
+def test_copy_result_partial_success():
+    """Given partial success (some files copied, some failed)
+    When creating EnvFileCopyResult model
+    Then model should reflect partial success"""
+    from spork.data_models import EnvFileCopyResult
+
+    # Given / When
+    result = EnvFileCopyResult(
+        files_discovered=3,
+        files_copied=2,
+        files_failed=1,
+        errors=["Permission denied: .env.local"]
+    )
+
+    # Then
+    assert result.files_discovered == 3
+    assert result.files_copied == 2
+    assert result.files_failed == 1
+    assert result.partial_success is True
+    assert result.success is False
+
+
+def test_copy_result_no_files():
+    """Given no files discovered
+    When creating EnvFileCopyResult model
+    Then model should handle zero counts"""
+    from spork.data_models import EnvFileCopyResult
+
+    # Given / When
+    result = EnvFileCopyResult(
+        files_discovered=0,
+        files_copied=0,
+        files_failed=0
+    )
+
+    # Then
+    assert result.files_discovered == 0
+    assert result.success is False  # No files found
+
+
+def test_copy_result_invalid_counts():
+    """Given copied + failed exceeding discovered
+    When creating EnvFileCopyResult model
+    Then validation error should be raised"""
+    from spork.data_models import EnvFileCopyResult
+
+    # Given / When / Then
+    with pytest.raises(ValidationError, match="cannot exceed Discovered"):
+        EnvFileCopyResult(
+            files_discovered=2,
+            files_copied=2,
+            files_failed=1  # 2 + 1 = 3 > 2
+        )
+
+
+def test_copy_result_success_property():
+    """Given EnvFileCopyResult
+    When checking success property
+    Then it should return True only when all files copied"""
+    from spork.data_models import EnvFileCopyResult
+
+    # Given
+    full_success = EnvFileCopyResult(
+        files_discovered=3,
+        files_copied=3,
+        files_failed=0
+    )
+    partial_success = EnvFileCopyResult(
+        files_discovered=3,
+        files_copied=2,
+        files_failed=1
+    )
+    no_files = EnvFileCopyResult(
+        files_discovered=0,
+        files_copied=0,
+        files_failed=0
+    )
+
+    # When / Then
+    assert full_success.success is True
+    assert partial_success.success is False
+    assert no_files.success is False
+
+
+def test_copy_result_partial_success_property():
+    """Given EnvFileCopyResult
+    When checking partial_success property
+    Then it should return True when some copied and some failed"""
+    from spork.data_models import EnvFileCopyResult
+
+    # Given
+    full_success = EnvFileCopyResult(
+        files_discovered=3,
+        files_copied=3,
+        files_failed=0
+    )
+    partial = EnvFileCopyResult(
+        files_discovered=3,
+        files_copied=2,
+        files_failed=1
+    )
+    full_failure = EnvFileCopyResult(
+        files_discovered=3,
+        files_copied=0,
+        files_failed=3
+    )
+
+    # When / Then
+    assert full_success.partial_success is False
+    assert partial.partial_success is True
+    assert full_failure.partial_success is False
+
+
+def test_copy_result_immutable():
+    """Given created EnvFileCopyResult model
+    When attempting to modify fields
+    Then validation error should be raised (frozen model)"""
+    from spork.data_models import EnvFileCopyResult
+
+    # Given
+    result = EnvFileCopyResult(
+        files_discovered=3,
+        files_copied=3,
+        files_failed=0
+    )
+
+    # When / Then
+    with pytest.raises(ValidationError, match="frozen"):
+        result.files_copied = 2  # type: ignore

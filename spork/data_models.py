@@ -101,3 +101,35 @@ class CommandContext(BaseModel):
     repository: Optional[GitRepository] = None
     worktree_config: Optional[WorktreeConfig] = None
     validation_results: list[ValidationResult] = Field(default_factory=list)
+
+
+class EnvFileCopyResult(BaseModel):
+    """Result of copying .env files to worktree."""
+
+    model_config = {"frozen": True}
+
+    files_discovered: int = Field(0, ge=0, description="Total .env files found")
+    files_copied: int = Field(0, ge=0, description="Files successfully copied")
+    files_failed: int = Field(0, ge=0, description="Files that failed to copy")
+    errors: list[str] = Field(default_factory=list, description="Error messages")
+
+    @model_validator(mode="after")
+    def validate_counts(self) -> "EnvFileCopyResult":
+        """Ensure copied + failed <= discovered."""
+        total = self.files_copied + self.files_failed
+        if total > self.files_discovered:
+            raise ValueError(
+                f"Copied ({self.files_copied}) + Failed ({self.files_failed}) "
+                f"cannot exceed Discovered ({self.files_discovered})"
+            )
+        return self
+
+    @property
+    def success(self) -> bool:
+        """Check if operation was fully successful."""
+        return self.files_failed == 0 and self.files_discovered > 0
+
+    @property
+    def partial_success(self) -> bool:
+        """Check if some files copied but some failed."""
+        return self.files_copied > 0 and self.files_failed > 0
