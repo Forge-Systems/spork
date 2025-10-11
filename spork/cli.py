@@ -10,6 +10,7 @@ import click
 
 from spork.claude import launch_claude_code
 from spork.data_models import FeatureRequest, WorktreeConfig
+from spork.env_files import copy_env_files_to_worktree
 from spork.git_operations import (
     create_worktree,
     get_main_branch,
@@ -149,6 +150,30 @@ def cli(feature_request: str) -> None:
     except RuntimeError as e:
         click.echo(f"Error: {e}", err=True)
         sys.exit(2)
+
+    # 10.5. Copy .env files from main workspace (best-effort)
+    try:
+        result = copy_env_files_to_worktree(worktree_config.directory_path)
+
+        if result.files_discovered == 0:
+            # No .env files found - this is normal, don't show anything
+            pass
+        elif result.success:
+            click.echo(f"✓ Copied {result.files_copied} .env file(s) from main workspace")
+        elif result.partial_success:
+            click.echo(f"⚠ Copied {result.files_copied}/{result.files_discovered} .env files", err=True)
+            for error in result.errors:
+                click.echo(f"  - {error}", err=True)
+        else:
+            # All files failed
+            if result.errors:
+                click.echo(f"⚠ Failed to copy .env files: {result.errors[0]}", err=True)
+    except RuntimeError as e:
+        # Cannot determine repo root or other fatal error
+        click.echo(f"Warning: Could not copy .env files: {e}", err=True)
+    except Exception as e:
+        # Unexpected errors - warn but continue (worktree should still be usable)
+        click.echo(f"Warning: Unexpected error copying .env files: {e}", err=True)
 
     # 11. Launch Claude Code
     click.echo("✓ Launching Claude Code...")
